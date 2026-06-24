@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Animated Mobile Quiz</title>
+<style>
+    body {
+        font-family:'Times New Roman', Times, serif;
+        background:linear-gradient(rgba(10, 171, 189, 0.301),rgba(89, 0, 255, 0.882));
+        margin: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 10px;
+    }
+    .quiz-container {
+        background: white;
+        padding: 30px;
+        border-radius: 14px;
+        width: 100%;
+        max-width: 500px;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+    /* every question and option slides up + fades in when it appear */
+    @keyframes fadeIn {
+        /* invisible and slightly lower */
+        from { opacity: 0; transform: translateY(20px); }
+        /* visible and normal position */
+        to { opacity: 1; transform: translateY(0); }
+    }
+    h2 {
+        margin-bottom: 10px;
+        font-size: 1.3rem;
+    }
+    .option {
+        background: #f1f1f1f6;
+        padding: 10px;
+        margin: 10px 0;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.3s, transform 0.1s;
+        animation: fadeIn 0.4s ease-in-out;
+    }
+    .option:hover {
+        background: #dfdfdf;
+    }
+    .option:active {
+        transform: scale(0.98);
+    }
+    #next-btn {
+        margin-top: 15px;
+        padding: 12px;
+        width: 100%;
+        background: #28a745;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.3s;
+    }
+    #next-btn:hover {
+        background: #218838;
+    }
+    /* red=not yet answered */
+    #next-btn:disabled {
+        background: #282121;
+        cursor: not-allowed;
+    }
+    #timer {
+        font-weight:bolder;
+        margin-bottom: 10px;
+        color: #d9534f;
+        text-align: right;
+    }
+    @media (max-width: 500px)
+    /*mobile responsive  */
+    {
+        h2 { font-size: 1rem; }
+        .option { font-size: 0.9rem; }
+        #next-btn { font-size: 0.9rem; }
+    }
+</style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <!-- show countdown -->
+    <div id="timer">Time Left: 15s</div> 
+    <!-- display question text -->
+    <h2 id="question">Question text</h2>
+    <!-- hold answers -->
+    <div id="options"></div>
+    <!-- move to next question -->
+    <button id="next-btn" disabled>Next</button>
+</div>
+
+<script>
+    // stores questions with options,answers
+    const quizData = [
+        { question: "Which language runs in a web browser?", options: ["Java", "C", "Python", "JavaScript"], answer: "JavaScript" },
+        { question: "What does CSS stand for?", options: ["Central Style Sheets", "Cascading Style Sheets", "Cascading Simple Sheets", "Cars SUVs Sailboats"], answer: "Cascading Style Sheets" },
+        { question: "What does HTML stand for?", options: ["Hypertext Markup Language", "Hypertext Markdown Language", "Hyperloop Machine Language", "Helicopters Terminals Motorboats Lamborginis"], answer: "Hypertext Markup Language" }
+    ];
+
+    let 
+    // follow currrent question
+    currentQuestionIndex = 0,
+    // follow correct answer
+     score = 0, 
+    //  follow countdown
+     timeLeft = 15,
+    //  stores timer ID
+     timerInterval;
+
+    //  selecting HTML elements
+    const questionEl = document.getElementById("question");
+    const optionsEl = document.getElementById("options");
+    const nextBtn = document.getElementById("next-btn");
+    const timerEl = document.getElementById("timer");
+
+    // reset everything
+    function startQuiz() {
+        currentQuestionIndex = 0;
+        score = 0;
+        // calls the function
+        showQuestion();
+    }
+
+    // display 1 question
+    function showQuestion() {
+        // clean previous question data
+        resetState();
+        // shows current question
+        const currentQuestion = quizData[currentQuestionIndex];
+        questionEl.textContent = currentQuestion.question;
+
+        // loop through answers
+        currentQuestion.options.forEach(option => {
+            // create option
+            const btn = document.createElement("div");
+            // add text
+            btn.textContent = option;
+            // add class
+            btn.classList.add("option");
+            // click event 
+            btn.addEventListener("click", () => selectOption(btn, currentQuestion.answer));
+            optionsEl.appendChild(btn);
+        });
+
+        startTimer();
+    }
+
+    // reset before new question
+    function resetState() {
+        // disable next button
+        nextBtn.disabled = true;
+        // remove previous option
+        optionsEl.innerHTML = "";
+        // stop older timer
+        clearInterval(timerInterval);
+        // reset timer
+        timeLeft = 15;
+        // update screen
+        timerEl.textContent = `Time Left: ${timeLeft}s`;
+    }
+
+    // runs when user clicks
+    function selectOption(selectedBtn, correctAnswer) {
+        // get all options
+        const allOptions = document.querySelectorAll(".option");
+        // loop
+        allOptions.forEach(btn => {
+            btn.style.pointerEvents = "none";
+            // correct answer green colour will appear 
+            if (btn.textContent === correctAnswer) {
+                btn.style.background = "#28a745";
+                btn.style.color = "#fff";
+            }
+            // wrong answer red colour will appear
+            else if (btn === selectedBtn) {
+                btn.style.background = "#dc3545";
+                btn.style.color = "#fff";
+            }
+        });
+
+        // increase score
+        if (selectedBtn.textContent === correctAnswer) score++;
+        // enable next button
+        nextBtn.disabled = false;
+        // stop timer
+        clearInterval(timerInterval);
+    }
+
+    // create countdown
+    function startTimer() {
+        timerInterval = setInterval(() => {
+            // time will decrese
+            timeLeft--;
+            timerEl.textContent = `Time Left: ${timeLeft}s`;
+            // when timer ends
+            if (timeLeft <= 0) {
+                // stop timer
+                clearInterval(timerInterval);
+                autoSelect();
+            }
+        }, 1000);
+    }
+
+    // run when time is over
+    function autoSelect() {
+        const currentQuestion = quizData[currentQuestionIndex];
+        // find all options
+        const allOptions = document.querySelectorAll(".option");
+        allOptions.forEach(btn => {
+            btn.style.pointerEvents = "none";
+            // show correct answer
+            if (btn.textContent === currentQuestion.answer) {
+                btn.style.background = "#28a745";
+                // green colour will appear if answer is correct
+                btn.style.color = "#fff";
+            }
+        });
+        // enable next button 
+        nextBtn.disabled = false;
+    }
+
+    // button event
+    nextBtn.addEventListener("click", () => {
+        // move to next question
+        currentQuestionIndex++;
+        // if questions remain
+        if (currentQuestionIndex < quizData.length) {
+            showQuestion();
+        } else {
+            showScore();
+        }
+    });
+
+    // display final result 
+    function showScore() {
+        clearInterval(timerInterval);
+        // display score
+        questionEl.textContent = `🎉 You scored ${score} out of ${quizData.length}!`;
+        // remoove options
+        optionsEl.innerHTML = "";
+        // change button
+        nextBtn.textContent = "Restart";
+        nextBtn.disabled = false;
+        // restart
+        nextBtn.onclick = () => {
+            nextBtn.textContent = "Next";
+            startQuiz();
+        };
+    }
+
+    startQuiz();
+</script>
+
+</body>
+</html>
